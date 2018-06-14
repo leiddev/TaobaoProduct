@@ -17,7 +17,7 @@ wait = WebDriverWait(browser, 10)
 browser.set_window_size(1400, 900)
 
 def search():
-    print('正在搜索')
+    print('正在搜索: ' + KEYWORD)
     try:
         browser.get('https://www.taobao.com')
         input = wait.until(
@@ -60,7 +60,8 @@ def get_products():
     items = doc('#mainsrp-itemlist .items .item').items()
     for item in items:
         product = {
-            'image': item.find('.pic .img').attr('src'),
+            #'image': item.find('.pic .img').attr('src'),
+            'id': item.find('.title a').attr('data-nid'),
             'price': item.find('.price').text(),
             'deal': item.find('.deal-cnt').text()[:-3],
             'title': item.find('.title').text(),
@@ -73,16 +74,17 @@ def get_products():
 
 def save_to_mongo(result):
     try:
-        if db[MONGO_TABLE].insert(result):
-            print('存储到MONGODB成功', result)
-    except Exception:
-        print('存储到MONGODB失败', result)
+        if not db[MONGO_TABLE].insert(result):
+            print('存储到数据库失败: ', result)
+    except Exception as e:
+        print('存储到数据库失败: ' + str(e))
 
 
 def main():
     try:
         total = search()
         total = int(re.compile('(\d+)').search(total).group(1))
+        print("搜索结果页数 " + str(total))
         for i in range(2, total + 1):
             next_page(i)
     except Exception:
